@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 4%;
+    --foreground: 180 100% 97%;
+    --card: 220 20% 6%;
+    --card-foreground: 180 100% 97%;
+    --popover: 220 20% 6%;
+    --popover-foreground: 180 100% 97%;
+    --primary: 187 100% 50%;
+    --primary-foreground: 220 20% 4%;
+    --secondary: 220 15% 12%;
+    --secondary-foreground: 180 100% 97%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 180 30% 60%;
+    --accent: 187 100% 50%;
+    --accent-foreground: 220 20% 4%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 187 50% 20%;
+    --input: 187 50% 20%;
+    --ring: 187 100% 50%;
+    --radius: 0.5rem;
+    
+    --cyan-glow: 0 0 20px rgba(0, 255, 255, 0.5);
+    --red-glow: 0 0 20px rgba(255, 0, 0, 0.5);
+    --amber-glow: 0 0 20px rgba(255, 191, 0, 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Rajdhani', sans-serif;
+    background: linear-gradient(135deg, #05070a 0%, #0a0f1a 50%, #05070a 100%);
+    min-height: 100vh;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.05em;
+  }
+}
+
+@layer components {
+  .cyber-card {
+    @apply relative bg-card/80 backdrop-blur-md border border-cyan-500/30 rounded-lg;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1), inset 0 0 30px rgba(0, 255, 255, 0.02);
+  }
+  
+  .cyber-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent);
+  }
+  
+  .cyber-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 30px;
+    height: 30px;
+    border-left: 2px solid rgba(0, 255, 255, 0.5);
+    border-bottom: 2px solid rgba(0, 255, 255, 0.5);
+  }
+  
+  .cyber-text {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+  
+  .cyber-text-red {
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  }
+  
+  .cyber-text-amber {
+    text-shadow: 0 0 10px rgba(255, 191, 0, 0.5);
+  }
+  
+  .scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.8), transparent);
+    animation: scan 3s linear infinite;
+    pointer-events: none;
+  }
+  
+  .grid-bg {
+    background-image: 
+      linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  
+  .hexagon-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%2300ffff' fill-opacity='0.03'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-7.5L27.99 34H28v2.31h-.01L17 42.65V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  .threat-high {
+    @apply border-red-500/50 bg-red-500/10;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.2), inset 0 0 20px rgba(255, 0, 0, 0.05);
+  }
+  
+  .threat-medium {
+    @apply border-amber-500/50 bg-amber-500/10;
+    box-shadow: 0 0 20px rgba(255, 191, 0, 0.2), inset 0 0 20px rgba(255, 191, 0, 0.05);
+  }
+  
+  .threat-low {
+    @apply border-emerald-500/50 bg-emerald-500/10;
+    box-shadow: 0 0 20px rgba(0, 255, 128, 0.2), inset 0 0 20px rgba(0, 255, 128, 0.05);
+  }
+  
+  .data-stream {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    color: rgba(0, 255, 255, 0.4);
+    letter-spacing: 0.1em;
+  }
+  
+  .corner-accent {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 255, 255, 0.5);
+  }
+  
+  .corner-accent-tl {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+  }
+  
+  .corner-accent-tr {
+    top: -2px;
+    right: -2px;
+    border-left: none;
+    border-bottom: none;
+  }
+  
+  .corner-accent-bl {
+    bottom: -2px;
+    left: -2px;
+    border-right: none;
+    border-top: none;
+  }
+  
+  .corner-accent-br {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-scan {
+    animation: scan 3s linear infinite;
+  }
+  
+  .animate-flicker {
+    animation: flicker 2s linear infinite;
+  }
+  
+  .animate-data-flow {
+    animation: dataFlow 1s linear infinite;
+  }
+  
+  .text-cyan-glow {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.4);
+  }
+  
+  .text-red-glow {
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
+  }
+  
+  .text-amber-glow {
+    text-shadow: 0 0 10px rgba(255, 191, 0, 0.8), 0 0 20px rgba(255, 191, 0, 0.4);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes dataFlow {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
+}
