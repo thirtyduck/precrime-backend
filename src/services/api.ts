@@ -22,11 +22,7 @@ function getWsUrl(): string {
 
 export function setBackendUrl(url: string): void {
   if (typeof window !== 'undefined') {
-    // Normalize URL - add /api if not present
-    let normalized = url;
-    if (!normalized.endsWith('/api')) {
-      normalized = normalized.replace(/\/$/, '') + '/api';
-    }
+    const normalized = url.replace(/\/$/, '');
     localStorage.setItem('precrime_backend_url', normalized);
   }
 }
