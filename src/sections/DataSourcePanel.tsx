@@ -69,13 +69,14 @@ export function DataSourcePanel({
     return `${hours}h ago`;
   };
 
-  const handleTest = async (id: string) => {
+const handleTest = async (id: string) => {
     if (!onTest) return;
     
     setTestingSource(id);
     try {
       const result = await onTest(id);
       setTestResults(prev => ({ ...prev, [id]: result }));
+      if (result.success) onRefresh();
     } catch (error) {
       setTestResults(prev => ({ 
         ...prev, 
