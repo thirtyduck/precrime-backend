@@ -21,7 +21,7 @@ export const DEFAULT_DATA_SOURCES: DataSourceConfig[] = [
     id: 'cisa',
     name: 'CISA Alerts',
     enabled: true,
-    endpoint: 'https://api.cisa.gov/alerts',
+    endpoint: 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json',
     refreshInterval: 300,
     status: 'disconnected',
   },
