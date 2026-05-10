@@ -9,7 +9,8 @@ export interface DataSourceConfig {
   endpoint?: string;
   refreshInterval: number; // in seconds
   lastFetch?: number;
-  status: 'connected' | 'disconnected' | 'error';
+  status: 'connected' | 'disconnected' | 'error' | 'demo';
+  statusMessage?: string;
   requiresApiKey?: boolean;
   requiresUrl?: boolean;
   description?: string;
@@ -82,6 +83,8 @@ class ThreatDataService {
           location: '185.234.xxx.xxx (Netherlands)',
           confidence: 96,
           indicators: ['IOC: 185.234.xxx.xxx', 'Domain: update-service.biz', 'Hash: a3f5c8...'],
+          latitude: 52.37,
+          longitude: 4.90,
         },
         {
           id: 'THR-ABUSE-002',
@@ -92,6 +95,8 @@ class ThreatDataService {
           location: 'Multiple regions',
           confidence: 89,
           indicators: ['Domain: secure-banking-verify.net', 'URL pattern: /login/verify'],
+          latitude: 37.77,
+          longitude: -122.42,
         },
       ];
     } catch (error) {
@@ -115,6 +120,8 @@ class ThreatDataService {
           location: 'Critical Infrastructure Sectors',
           confidence: 94,
           indicators: ['CVE-2024-XXXX', 'APT group activity', 'ICS/SCADA targeting'],
+          latitude: 38.91,
+          longitude: -77.04,
         },
         {
           id: 'CISA-AA24-087B',
@@ -125,6 +132,8 @@ class ThreatDataService {
           location: 'Healthcare Sector - US/CA/UK',
           confidence: 91,
           indicators: ['Ransomware: LockBit derivative', 'Initial access: VPN exploits'],
+          latitude: 43.65,
+          longitude: -79.38,
         },
       ];
     } catch (error) {
@@ -156,6 +165,8 @@ class ThreatDataService {
           location: 'Government Networks',
           confidence: 87,
           indicators: ['TTP: Spear phishing', 'Malware: WellMess variant'],
+          latitude: 55.75,
+          longitude: 37.62,
         },
       ];
     } catch (error) {

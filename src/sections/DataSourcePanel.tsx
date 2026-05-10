@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { 
-  Database, RefreshCw, Check, X, AlertTriangle, Key, Globe, 
-  Play, Loader2, Share2, Radar, Fish, Building2 
+import {
+  Database, RefreshCw, Check, X, AlertTriangle, Key, Globe,
+  Play, Loader2, Share2, Radar, Fish, Building2,
+  Mountain, CloudAlert, Swords, Satellite, Flame, HeartHandshake, Newspaper,
+  ChevronDown
 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -19,6 +22,7 @@ interface DataSourcePanelProps {
   isLoading: boolean;
   lastFetch: number | null;
   backendConnected?: boolean;
+  canManage?: boolean;
 }
 
 const sourceIcons: Record<string, React.ElementType> = {
@@ -27,6 +31,13 @@ const sourceIcons: Record<string, React.ElementType> = {
   shadowserver: Radar,
   cisa: Building2,
   openphish: Fish,
+  usgs: Mountain,
+  gdacs: CloudAlert,
+  acled: Swords,
+  eonet: Satellite,
+  firms: Flame,
+  reliefweb: HeartHandshake,
+  gdelt: Newspaper,
 };
 
 const sourceDescriptions: Record<string, string> = {
@@ -35,18 +46,26 @@ const sourceDescriptions: Record<string, string> = {
   shadowserver: 'ShadowServer Foundation - Internet security scanning and reports',
   cisa: 'US Cybersecurity & Infrastructure Security Agency advisories and alerts',
   openphish: 'Real-time phishing URL detection feed with AI-driven detection',
+  usgs: 'USGS real-time earthquake data — magnitude, depth, tsunami warnings worldwide',
+  gdacs: 'UN/EC global disaster alerts — earthquakes, floods, cyclones, volcanoes, wildfires',
+  acled: 'Armed conflict, political violence, protests, and riots — 240+ countries (free key required)',
+  eonet: 'NASA Earth Observatory — wildfires, volcanic eruptions, severe storms, floods',
+  firms: 'NASA satellite fire/hotspot detection — MODIS & VIIRS near real-time data (free key required)',
+  reliefweb: 'UN OCHA humanitarian crisis reports, disaster updates, and situation reports',
+  gdelt: 'Global media-reported events — conflicts, disasters, unrest — updated every 15 minutes',
 };
 
 export function DataSourcePanel({ 
-  dataSources, 
-  onToggle, 
-  onUpdateApiKey, 
+  dataSources,
+  onToggle,
+  onUpdateApiKey,
   onUpdateEndpoint,
-  onRefresh, 
+  onRefresh,
   onTest,
   isLoading,
   lastFetch,
   backendConnected = false,
+  canManage = true,
 }: DataSourcePanelProps) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingEndpoint, setEditingEndpoint] = useState<string | null>(null);
@@ -87,7 +106,10 @@ const handleTest = async (id: string) => {
     }
   };
 
+  const [infoExpanded, setInfoExpanded] = useState(false);
+
   return (
+    <div className="space-y-3">
     <section className="cyber-card p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -106,20 +128,23 @@ const handleTest = async (id: string) => {
           <span className="text-[10px] text-cyan-400/50">
             Last fetch: {formatLastFetch(lastFetch)}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isLoading || !backendConnected}
-            className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              disabled={isLoading || !backendConnected}
+              className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Data Source List */}
+      {/* Data Source List — scrollable */}
+      <ScrollArea className="h-[420px] pr-3">
       <div className="space-y-3">
         {dataSources.length === 0 ? (
           <div className="text-center py-8">
@@ -134,7 +159,7 @@ const handleTest = async (id: string) => {
         ) : (
           dataSources.map((source) => {
             const Icon = sourceIcons[source.id] || Database;
-            const needsApiKey = ['levelblue', 'shadowserver', 'misp'].includes(source.id) && source.requiresApiKey;
+            const needsApiKey = !!source.requiresApiKey;
             const needsUrl = source.requiresUrl || source.id === 'misp';
             const testResult = testResults[source.id];
             
@@ -142,29 +167,35 @@ const handleTest = async (id: string) => {
               <div 
                 key={source.id}
                 className={`p-3 rounded border ${
-                  source.enabled 
-                    ? source.status === 'connected' 
-                      ? 'border-emerald-500/30 bg-emerald-500/5' 
+                  source.enabled
+                    ? source.status === 'connected'
+                      ? 'border-emerald-500/30 bg-emerald-500/5'
                       : source.status === 'error'
                         ? 'border-red-500/30 bg-red-500/5'
-                        : 'border-amber-500/30 bg-amber-500/5'
+                        : source.status === 'demo'
+                          ? 'border-purple-500/30 bg-purple-500/5'
+                          : 'border-amber-500/30 bg-amber-500/5'
                     : 'border-cyan-500/20 bg-cyber-dark/50'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className={`w-8 h-8 rounded flex items-center justify-center ${
-                      source.enabled 
+                      source.enabled
                         ? source.status === 'connected'
                           ? 'bg-emerald-500/20'
-                          : 'bg-amber-500/20'
+                          : source.status === 'demo'
+                            ? 'bg-purple-500/20'
+                            : 'bg-amber-500/20'
                         : 'bg-cyan-500/10'
                     }`}>
                       <Icon className={`w-4 h-4 ${
                         source.enabled
                           ? source.status === 'connected'
                             ? 'text-emerald-400'
-                            : 'text-amber-400'
+                            : source.status === 'demo'
+                              ? 'text-purple-400'
+                              : 'text-amber-400'
                           : 'text-cyan-400/50'
                       }`} />
                     </div>
@@ -172,7 +203,7 @@ const handleTest = async (id: string) => {
                       <div className="flex items-center gap-2">
                         <span className="font-orbitron text-sm text-cyan-400">{source.name}</span>
                         {source.enabled && (
-                          <StatusBadge status={source.status} />
+                          <StatusBadge status={source.status} statusMessage={source.statusMessage} />
                         )}
                       </div>
                       <p className="text-[10px] text-cyan-400/50 mt-0.5">
@@ -197,7 +228,7 @@ const handleTest = async (id: string) => {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {onTest && source.enabled && (
+                    {canManage && onTest && source.enabled && (
                       <Button
                         size="icon"
                         variant="ghost"
@@ -212,17 +243,19 @@ const handleTest = async (id: string) => {
                         )}
                       </Button>
                     )}
-                    <Switch
-                      checked={source.enabled}
-                      onCheckedChange={() => onToggle(source.id)}
-                      disabled={!backendConnected}
-                      className="data-[state=checked]:bg-cyan-500"
-                    />
+                    {canManage && (
+                      <Switch
+                        checked={source.enabled}
+                        onCheckedChange={() => onToggle(source.id)}
+                        disabled={!backendConnected}
+                        className="data-[state=checked]:bg-cyan-500"
+                      />
+                    )}
                   </div>
                 </div>
 
                 {/* API Key Input */}
-                {source.enabled && needsApiKey && (
+                {canManage && source.enabled && needsApiKey && (
                   <div className="mt-3 pl-11">
                     {editingKey === source.id ? (
                       <div className="flex items-center gap-2">
@@ -278,7 +311,7 @@ const handleTest = async (id: string) => {
                 )}
 
                 {/* Endpoint URL Input */}
-                {source.enabled && needsUrl && (
+                {canManage && source.enabled && needsUrl && (
                   <div className="mt-2 pl-11">
                     {editingEndpoint === source.id ? (
                       <div className="flex items-center gap-2">
@@ -338,46 +371,93 @@ const handleTest = async (id: string) => {
         )}
       </div>
 
-      {/* Info Footer */}
-      <div className="mt-4 p-3 rounded bg-cyan-500/5 border border-cyan-500/20">
+      </ScrollArea>
+    </section>
+
+    {/* Live/Demo Mode Info — collapsible, outside data sources card */}
+    <div className="cyber-card">
+      <div
+        className="flex items-center justify-between p-3 cursor-pointer select-none"
+        onClick={() => setInfoExpanded(!infoExpanded)}
+      >
         <div className="flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5" />
-          <div>
-            <p className="text-xs text-cyan-400/70">
-              <strong className="text-cyan-400">
-                {backendConnected ? 'Live Mode:' : 'Demo Mode:'}
-              </strong>{' '}
-              {backendConnected 
-                ? 'Connected to backend API. Enable Abuse.ch for free real-time threat data.'
-                : 'Backend not connected. Using simulated data. Start the backend server for live feeds.'
-              }
-            </p>
-            {backendConnected && (
-              <ol className="text-[10px] text-cyan-400/50 mt-1 ml-4 list-decimal">
-                <li>Enable Abuse.ch (free, no API key required)</li>
-                <li>Add API keys for AlienVault OTX, VirusTotal, or MISP</li>
-                <li>Click Test to verify connection, then Refresh to fetch data</li>
-              </ol>
-            )}
-          </div>
+          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-cyan-400/70">
+            <strong className="text-cyan-400">
+              {backendConnected ? 'Live Mode:' : 'Demo Mode:'}
+            </strong>{' '}
+            {backendConnected
+              ? 'Connected to backend API. Many sources work out of the box — no API key needed.'
+              : 'Backend not connected. Using simulated data. Start the backend server for live feeds.'
+            }
+          </p>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-cyan-400/40 flex-shrink-0 transition-transform duration-200 ${infoExpanded ? 'rotate-180' : ''}`} />
+      </div>
+
+      <div className={`overflow-hidden transition-all duration-300 ${infoExpanded ? 'max-h-[300px]' : 'max-h-0'}`}>
+        <div className="border-t border-cyan-500/10">
+          <ScrollArea className="h-[260px]">
+            <div className="px-3 py-2 text-[10px] text-cyan-400/50 space-y-3">
+
+              <div>
+                <p className="font-semibold text-cyan-400/60 mb-1">Cyber Threat Sources</p>
+                <div className="ml-3 space-y-1">
+                  <p><span className="text-cyan-400">CISA KEV</span> — Known Exploited Vulnerabilities catalog. No key required.</p>
+                  <p><span className="text-cyan-400">OpenPhish</span> — Real-time phishing URL feed with AI detection. No key required.</p>
+                  <p><span className="text-cyan-400">LevelBlue OTX</span> — Crowdsourced threat intel (AlienVault). Free registration at otx.alienvault.com.</p>
+                  <p><span className="text-cyan-400">ShadowServer</span> — Internet security scanning &amp; reports. Approved API key required.</p>
+                  <p><span className="text-cyan-400">MISP</span> — Malware Information Sharing Platform. Self-hosted instance URL + auth key.</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-semibold text-cyan-400/60 mb-1">Natural Disaster Sources</p>
+                <div className="ml-3 space-y-1">
+                  <p><span className="text-cyan-400">USGS Earthquake</span> — Real-time seismic data, magnitude, depth, tsunami warnings. No key required.</p>
+                  <p><span className="text-cyan-400">GDACS</span> — UN/EC global disaster alerts: earthquakes, floods, cyclones, volcanoes. No key required.</p>
+                  <p><span className="text-cyan-400">NASA EONET</span> — Earth Observatory natural events: wildfires, eruptions, storms. No key required.</p>
+                  <p><span className="text-cyan-400">NASA FIRMS</span> — Satellite fire/hotspot detection (MODIS &amp; VIIRS). Free key at firms.modaps.eosdis.nasa.gov.</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-semibold text-cyan-400/60 mb-1">Geopolitical &amp; Humanitarian Sources</p>
+                <div className="ml-3 space-y-1">
+                  <p><span className="text-cyan-400">ACLED</span> — Armed conflict, political violence, protests in 240+ countries. Free key at acleddata.com.</p>
+                  <p><span className="text-cyan-400">ReliefWeb</span> — UN OCHA humanitarian crisis reports &amp; situation updates. Free appname at apidoc.reliefweb.int.</p>
+                  <p><span className="text-cyan-400">GDELT</span> — Global media-monitored events: conflicts, disasters, unrest. No key required.</p>
+                </div>
+              </div>
+
+              <p className="text-cyan-400/40 pt-1">Click Test to verify a connection, then Refresh to pull new data.</p>
+            </div>
+          </ScrollArea>
         </div>
       </div>
-    </section>
+    </div>
+    </div>
   );
 }
 
-function StatusBadge({ status }: { status: DataSourceConfig['status'] }) {
+function StatusBadge({ status, statusMessage }: { status: DataSourceConfig['status']; statusMessage?: string }) {
   const config = {
     connected: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50', label: 'Connected' },
     disconnected: { color: 'bg-amber-500/20 text-amber-400 border-amber-500/50', label: 'Disconnected' },
     error: { color: 'bg-red-500/20 text-red-400 border-red-500/50', label: 'Error' },
+    demo: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/50', label: 'Demo' },
   };
 
-  const { color, label } = config[status];
+  const { color, label } = config[status] || config.disconnected;
 
   return (
-    <Badge className={`text-[10px] ${color}`}>
-      {label}
-    </Badge>
+    <span className="inline-flex flex-col">
+      <Badge className={`text-[10px] ${color}`}>
+        {label}
+      </Badge>
+      {status === 'demo' && statusMessage && (
+        <span className="text-[9px] text-purple-400/70 mt-0.5">{statusMessage}</span>
+      )}
+    </span>
   );
 }

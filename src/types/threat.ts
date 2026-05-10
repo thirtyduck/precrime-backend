@@ -11,6 +11,8 @@ export interface Threat {
   status: 'active' | 'mitigated' | 'monitoring';
   timestamp: number;
   source?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   raw?: any;
 }
 

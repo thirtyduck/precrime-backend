@@ -1,143 +1,206 @@
-import { Globe, Radio, Satellite, Wifi, Server, Lock } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Globe, Server, Activity } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import type { Threat } from '@/types/threat';
+import type { DataSourceConfig } from '@/services/threatDataService';
 
-export function GlobalMonitor() {
-  const [rotation, setRotation] = useState(0);
+interface GlobalMonitorProps {
+  threats: Threat[];
+  dataSources: DataSourceConfig[];
+}
+
+export function GlobalMonitor({ threats, dataSources }: GlobalMonitorProps) {
   const [pulseRadius, setPulseRadius] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setRotation(prev => (prev + 1) % 360);
       setPulseRadius(prev => (prev + 2) % 100);
     }, 50);
     return () => clearInterval(interval);
   }, []);
 
-  // Generate random threat points on the globe
-  const threatPoints = [
-    { x: 30, y: 35, type: 'critical', label: 'NYC' },
-    { x: 52, y: 28, type: 'high', label: 'LON' },
-    { x: 75, y: 40, type: 'medium', label: 'TYO' },
-    { x: 45, y: 55, type: 'high', label: 'DXB' },
-    { x: 65, y: 65, type: 'critical', label: 'SIN' },
-    { x: 20, y: 50, type: 'medium', label: 'LAX' },
-    { x: 48, y: 22, type: 'low', label: 'BER' },
-    { x: 80, y: 55, type: 'medium', label: 'SYD' },
-  ];
+  const geoThreats = useMemo(() =>
+    threats
+      .filter(t => t.latitude != null && t.longitude != null)
+      .map(t => ({
+        x: ((t.longitude! + 180) / 360) * 100,
+        y: ((90 - t.latitude!) / 180) * 100,
+        severity: t.severity,
+        label: t.location?.split(',')[0]?.trim().substring(0, 12) || t.source || '',
+        title: t.title,
+        source: t.source || 'unknown',
+        category: t.category,
+      })),
+    [threats]
+  );
 
-  const dataStreams = [
-    { name: 'Network Traffic', value: 847.3, unit: 'Gbps', trend: 'up' },
-    { name: 'Active Connections', value: 2.4, unit: 'M', trend: 'stable' },
-    { name: 'Threat Feeds', value: 156, unit: '', trend: 'up' },
-    { name: 'Data Points', value: 8.7, unit: 'B', trend: 'up' },
-  ];
+  const severityCounts = useMemo(() => {
+    const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+    threats.forEach(t => { counts[t.severity]++; });
+    return counts;
+  }, [threats]);
 
-  const systemNodes = [
-    { name: 'Core AI', status: 'online', load: 87 },
-    { name: 'Analytics', status: 'online', load: 72 },
-    { name: 'Prediction', status: 'online', load: 91 },
-    { name: 'Storage', status: 'online', load: 45 },
-  ];
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    threats.forEach(t => {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+  }, [threats]);
+
+  const sourceCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    threats.forEach(t => {
+      const src = t.source || 'unknown';
+      counts[src] = (counts[src] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+  }, [threats]);
+
+  const connectedSources = dataSources.filter(ds => ds.status === 'connected').length;
+  const enabledSources = dataSources.filter(ds => ds.enabled).length;
 
   return (
     <section className="space-y-4">
-      {/* Section Header */}
       <div className="flex items-center gap-3">
         <Globe className="w-5 h-5 text-cyan-400" />
         <h2 className="font-orbitron text-lg font-semibold text-white tracking-wide">
           GLOBAL THREAT MONITOR
         </h2>
+        <span className="text-[10px] text-cyan-400/50 ml-2">
+          {geoThreats.length} geo-located / {threats.length} total threats
+        </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Radar Globe */}
+        {/* World Map Projection */}
         <div className="lg:col-span-2 cyber-card p-6 relative overflow-hidden">
           <div className="absolute inset-0 hexagon-pattern opacity-30" />
-          
-          <div className="relative flex items-center justify-center h-80">
-            {/* Globe Circle */}
-            <div className="relative w-64 h-64">
-              {/* Outer rings */}
-              <div className="absolute inset-0 rounded-full border border-cyan-500/20" />
-              <div className="absolute inset-4 rounded-full border border-cyan-500/15" />
-              <div className="absolute inset-8 rounded-full border border-cyan-500/10" />
-              
+
+          <div className="relative h-80">
+            {/* Equirectangular map grid */}
+            <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
               {/* Grid lines */}
-              <div className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-500/10" 
-                style={{ transform: `rotate(${rotation}deg)` }} 
-              />
-              <div className="absolute inset-12 rounded-full border border-dashed border-cyan-500/10" 
-                style={{ transform: `rotate(-${rotation}deg)` }} 
-              />
+              {[20, 40, 50, 60, 80].map(y => (
+                <line key={`h${y}`} x1="0" y1={y} x2="100" y2={y} stroke="rgba(0,255,255,0.08)" strokeWidth="0.2" />
+              ))}
+              {[20, 40, 60, 80].map(x => (
+                <line key={`v${x}`} x1={x} y1="0" x2={x} y2="100" stroke="rgba(0,255,255,0.08)" strokeWidth="0.2" />
+              ))}
+              {/* Equator */}
+              <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(0,255,255,0.15)" strokeWidth="0.3" strokeDasharray="1,1" />
+              {/* Prime meridian */}
+              <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(0,255,255,0.15)" strokeWidth="0.3" strokeDasharray="1,1" />
 
-              {/* Radar sweep */}
-              <div 
-                className="absolute inset-0 rounded-full"
-                style={{ 
-                  background: `conic-gradient(from ${rotation}deg, transparent 0deg, rgba(0, 255, 255, 0.1) 60deg, transparent 120deg)`,
-                }}
-              />
+              {/* Rough continent outlines — simplified polygons */}
+              <ContinentOutlines />
 
-              {/* Center */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 bg-cyan-400 rounded-full animate-pulse shadow-cyan" />
-              </div>
+              {/* Radar sweep overlay */}
+              <defs>
+                <radialGradient id="sweep" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(0,255,255,0.1)" />
+                  <stop offset="100%" stopColor="rgba(0,255,255,0)" />
+                </radialGradient>
+              </defs>
+              <circle cx="50" cy="50" r={pulseRadius / 2 + 5} fill="none" stroke="rgba(0,255,255,0.15)" strokeWidth="0.3"
+                opacity={1 - pulseRadius / 100} />
 
               {/* Threat points */}
-              {threatPoints.map((point, i) => (
-                <ThreatPoint key={i} point={point} />
+              {geoThreats.map((t, i) => (
+                <g key={i}>
+                  <circle
+                    cx={t.x} cy={t.y}
+                    r={t.severity === 'critical' ? 1.2 : t.severity === 'high' ? 1 : 0.7}
+                    fill={severityColor(t.severity)}
+                    opacity={0.9}
+                  >
+                    <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle
+                    cx={t.x} cy={t.y}
+                    r={t.severity === 'critical' ? 2.5 : 1.8}
+                    fill="none"
+                    stroke={severityColor(t.severity)}
+                    strokeWidth="0.2"
+                    opacity={0.4}
+                  >
+                    <animate attributeName="r" values={`${t.severity === 'critical' ? 1.2 : 1};${t.severity === 'critical' ? 3.5 : 2.5}`} dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.5;0" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                </g>
               ))}
+            </svg>
 
-              {/* Pulse effect */}
-              <div 
-                className="absolute inset-0 rounded-full border-2 border-cyan-400/30"
-                style={{ 
-                  transform: `scale(${0.5 + pulseRadius / 200})`,
-                  opacity: 1 - pulseRadius / 100,
-                }}
-              />
+            {/* Legend */}
+            <div className="absolute bottom-2 left-2 flex items-center gap-3">
+              {(['critical', 'high', 'medium', 'low'] as const).map(sev => (
+                <div key={sev} className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: severityColor(sev) }} />
+                  <span className="text-[9px] text-cyan-400/50 capitalize">{sev}</span>
+                </div>
+              ))}
             </div>
 
-            {/* Side indicators */}
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 space-y-2">
-              <Indicator icon={Radio} label="SIGINT" active />
-              <Indicator icon={Satellite} label="SAT" active />
-              <Indicator icon={Wifi} label="NET" active />
-            </div>
-
-            {/* Range rings labels */}
-            <div className="absolute bottom-4 right-4 text-right">
+            <div className="absolute bottom-2 right-2 text-right">
               <p className="text-[10px] text-cyan-400/40">SCAN RANGE</p>
               <p className="font-orbitron text-lg text-cyan-400">GLOBAL</p>
             </div>
           </div>
         </div>
 
-        {/* Side Panel */}
+        {/* Side Panel — real stats */}
         <div className="space-y-4">
-          {/* Data Streams */}
+          {/* Severity Breakdown */}
           <div className="cyber-card p-4">
-            <h3 className="font-orbitron text-sm text-cyan-400 mb-4 flex items-center gap-2">
-              <Server className="w-4 h-4" />
-              DATA STREAMS
+            <h3 className="font-orbitron text-sm text-cyan-400 mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              THREAT SEVERITY
             </h3>
-            <div className="space-y-3">
-              {dataStreams.map((stream, i) => (
-                <DataStreamItem key={i} stream={stream} />
+            <div className="space-y-2">
+              <SeverityBar label="Critical" count={severityCounts.critical} total={threats.length} color="#ef4444" />
+              <SeverityBar label="High" count={severityCounts.high} total={threats.length} color="#f59e0b" />
+              <SeverityBar label="Medium" count={severityCounts.medium} total={threats.length} color="#06b6d4" />
+              <SeverityBar label="Low" count={severityCounts.low} total={threats.length} color="#10b981" />
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="cyber-card p-4">
+            <h3 className="font-orbitron text-sm text-cyan-400 mb-3 flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              BY CATEGORY
+            </h3>
+            <div className="space-y-2">
+              {categoryCounts.map(([cat, count]) => (
+                <div key={cat} className="flex items-center justify-between">
+                  <span className="text-xs text-cyan-400/70 truncate mr-2">{cat}</span>
+                  <span className="font-orbitron text-sm text-cyan-400">{count}</span>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* System Nodes */}
+          {/* Source Status */}
           <div className="cyber-card p-4">
-            <h3 className="font-orbitron text-sm text-cyan-400 mb-4 flex items-center gap-2">
-              <Lock className="w-4 h-4" />
-              SYSTEM NODES
+            <h3 className="font-orbitron text-sm text-cyan-400 mb-3 flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              SOURCES ({connectedSources}/{enabledSources})
             </h3>
             <div className="space-y-2">
-              {systemNodes.map((node, i) => (
-                <SystemNode key={i} node={node} />
-              ))}
+              {sourceCounts.map(([src, count]) => {
+                const ds = dataSources.find(d => d.id === src);
+                const statusColor = ds?.status === 'connected' ? 'bg-emerald-400' : ds?.status === 'demo' ? 'bg-purple-400' : 'bg-amber-400';
+                return (
+                  <div key={src} className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${statusColor} animate-pulse`} />
+                    <span className="text-xs text-cyan-400/70 flex-1 truncate">{ds?.name || src}</span>
+                    <span className="font-orbitron text-[10px] text-cyan-400">{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -146,97 +209,48 @@ export function GlobalMonitor() {
   );
 }
 
-interface ThreatPointProps {
-  point: { x: number; y: number; type: string; label: string };
+function severityColor(severity: string): string {
+  switch (severity) {
+    case 'critical': return '#ef4444';
+    case 'high': return '#f59e0b';
+    case 'medium': return '#06b6d4';
+    case 'low': return '#10b981';
+    default: return '#06b6d4';
+  }
 }
 
-function ThreatPoint({ point }: ThreatPointProps) {
-  const colors = {
-    critical: 'bg-red-400 shadow-red',
-    high: 'bg-amber-400 shadow-amber',
-    medium: 'bg-cyan-400 shadow-cyan',
-    low: 'bg-emerald-400 shadow-emerald',
-  };
-
-  const colorClass = colors[point.type as keyof typeof colors] || colors.medium;
-
-  return (
-    <div 
-      className="absolute"
-      style={{ 
-        left: `${point.x}%`, 
-        top: `${point.y}%`,
-        transform: 'translate(-50%, -50%)'
-      }}
-    >
-      <div className={`w-2 h-2 rounded-full ${colorClass} animate-pulse`} />
-      <div className={`absolute inset-0 w-2 h-2 rounded-full ${colorClass} animate-ping opacity-50`} />
-      <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] text-cyan-400/60 whitespace-nowrap">
-        {point.label}
-      </span>
-    </div>
-  );
-}
-
-interface IndicatorProps {
-  icon: React.ElementType;
-  label: string;
-  active: boolean;
-}
-
-function Indicator({ icon: Icon, label, active }: IndicatorProps) {
-  return (
-    <div className={`flex items-center gap-2 px-2 py-1 rounded ${active ? 'bg-cyan-500/10' : 'bg-cyber-dark/50'}`}>
-      <Icon className={`w-3 h-3 ${active ? 'text-cyan-400' : 'text-cyan-400/30'}`} />
-      <span className={`text-[10px] ${active ? 'text-cyan-400' : 'text-cyan-400/30'}`}>{label}</span>
-    </div>
-  );
-}
-
-interface DataStreamItemProps {
-  stream: { name: string; value: number; unit: string; trend: string };
-}
-
-function DataStreamItem({ stream }: DataStreamItemProps) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-cyan-400/70">{stream.name}</span>
-      <div className="flex items-center gap-2">
-        <span className="font-orbitron text-sm text-cyan-400">
-          {stream.value}{stream.unit}
-        </span>
-        <span className={`text-[10px] ${
-          stream.trend === 'up' ? 'text-red-400' : 
-          stream.trend === 'down' ? 'text-emerald-400' : 
-          'text-cyan-400'
-        }`}>
-          {stream.trend === 'up' ? '↗' : stream.trend === 'down' ? '↘' : '→'}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-interface SystemNodeProps {
-  node: { name: string; status: string; load: number };
-}
-
-function SystemNode({ node }: SystemNodeProps) {
+function SeverityBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const pct = total > 0 ? (count / total) * 100 : 0;
   return (
     <div className="flex items-center gap-3">
-      <div className={`w-2 h-2 rounded-full ${node.status === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-      <span className="text-xs text-cyan-400/70 flex-1">{node.name}</span>
-      <div className="w-16 h-1 bg-cyber-dark rounded-full overflow-hidden">
-        <div 
-          className={`h-full rounded-full ${
-            node.load > 80 ? 'bg-red-400' : 
-            node.load > 60 ? 'bg-amber-400' : 
-            'bg-emerald-400'
-          }`}
-          style={{ width: `${node.load}%` }}
-        />
+      <span className="text-xs text-cyan-400/70 w-14">{label}</span>
+      <div className="flex-1 h-1.5 bg-cyber-dark rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="font-orbitron text-[10px] text-cyan-400 w-8 text-right">{node.load}%</span>
+      <span className="font-orbitron text-[10px] text-cyan-400 w-6 text-right">{count}</span>
     </div>
+  );
+}
+
+function ContinentOutlines() {
+  return (
+    <g stroke="rgba(0,255,255,0.12)" strokeWidth="0.3" fill="rgba(0,255,255,0.03)">
+      {/* North America */}
+      <polygon points="5,18 18,15 25,20 28,25 25,35 22,40 18,42 15,38 12,35 8,30 5,25" />
+      {/* South America */}
+      <polygon points="22,48 27,45 30,50 32,55 30,65 28,72 25,78 22,75 20,65 20,55" />
+      {/* Europe */}
+      <polygon points="47,18 55,16 58,20 55,25 52,28 48,27 46,24" />
+      {/* Africa */}
+      <polygon points="47,32 55,30 60,35 62,45 58,58 55,65 50,62 47,52 45,42" />
+      {/* Asia */}
+      <polygon points="58,15 72,12 82,18 85,25 80,35 75,38 70,35 65,30 60,25" />
+      {/* India */}
+      <polygon points="65,32 70,30 72,35 70,42 67,40 65,36" />
+      {/* Southeast Asia / Indonesia */}
+      <polygon points="75,40 82,38 85,42 82,48 78,45" />
+      {/* Australia */}
+      <polygon points="78,58 88,55 92,60 90,68 82,68 78,63" />
+    </g>
   );
 }

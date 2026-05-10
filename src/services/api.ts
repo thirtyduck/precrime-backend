@@ -1,7 +1,14 @@
 // API client for connecting to the Precrime Threat Intelligence Backend
 
+// Auth token getter — set by AuthProvider
+let tokenGetter: (() => string | null) | null = null;
+
+export function setAuthTokenGetter(getter: () => string | null) {
+  tokenGetter = getter;
+}
+
 // Get backend URL from localStorage or use default
-function getBackendUrl(): string {
+export function getBackendUrl(): string {
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem('precrime_backend_url');
     if (stored) return stored;
@@ -34,15 +41,22 @@ export function getCurrentBackendUrl(): string {
 // Generic fetch wrapper with error handling
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${getBackendUrl()}${endpoint}`;
-  
+  const token = tokenGetter ? tokenGetter() : null;
+
   try {
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options?.headers,
       },
     });
+
+    if (response.status === 401 || response.status === 403) {
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+      throw new Error('Authentication expired');
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -162,10 +176,12 @@ export class ThreatWebSocketClient {
 
   connect() {
     const wsUrl = getWsUrl();
+    const token = tokenGetter ? tokenGetter() : null;
+    const urlWithAuth = token ? `${wsUrl}?token=${encodeURIComponent(token)}` : wsUrl;
     console.log('Connecting to WebSocket:', wsUrl);
-    
+
     try {
-      this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket(urlWithAuth);
 
       this.ws.onopen = () => {
         console.log('WebSocket connected');
@@ -250,6 +266,40 @@ export class ThreatWebSocketClient {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 }
+
+// User API
+export const userAPI = {
+  getAll: () => fetchAPI<{
+    users: Array<{ id: string; username: string; role: string; createdAt: string; updatedAt: string }>;
+  }>('/users'),
+
+  create: (data: { username: string; password: string; role: string }) =>
+    fetchAPI<{ user: { id: string; username: string; role: string; createdAt: string; updatedAt: string } }>(
+      '/users',
+      { method: 'POST', body: JSON.stringify(data) }
+    ),
+
+  update: (id: string, data: { username?: string; role?: string }) =>
+    fetchAPI<{ user: { id: string; username: string; role: string; createdAt: string; updatedAt: string } }>(
+      `/users/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    ),
+
+  delete: (id: string) =>
+    fetchAPI<{ message: string }>(`/users/${id}`, { method: 'DELETE' }),
+
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    fetchAPI<{ message: string }>('/users/me/password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  resetPassword: (id: string, newPassword: string) =>
+    fetchAPI<{ message: string }>(`/users/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ newPassword }),
+    }),
+};
 
 // Export singleton instance
 export const threatWebSocket = new ThreatWebSocketClient();

@@ -17,6 +17,8 @@ const generateMockThreats = (): Threat[] => [
     indicators: ['Traffic anomaly', 'Botnet activity', 'Target reconnaissance'],
     status: 'active',
     timestamp: Date.now(),
+    latitude: 40.71,
+    longitude: -74.01,
   },
   {
     id: 'THR-002',
@@ -30,6 +32,8 @@ const generateMockThreats = (): Threat[] => [
     indicators: ['Port congestion', 'Weather patterns', 'Labor disputes'],
     status: 'monitoring',
     timestamp: Date.now() - 300000,
+    latitude: 1.35,
+    longitude: 103.82,
   },
   {
     id: 'THR-003',
@@ -43,6 +47,8 @@ const generateMockThreats = (): Threat[] => [
     indicators: ['Off-hours access', 'Bulk downloads', 'Unauthorized queries'],
     status: 'active',
     timestamp: Date.now() - 600000,
+    latitude: 51.51,
+    longitude: -0.13,
   },
   {
     id: 'THR-004',
@@ -56,6 +62,8 @@ const generateMockThreats = (): Threat[] => [
     indicators: ['Options flow', 'Sentiment analysis', 'Correlation breakdown'],
     status: 'monitoring',
     timestamp: Date.now() - 900000,
+    latitude: 35.68,
+    longitude: 139.69,
   },
   {
     id: 'THR-005',
@@ -69,6 +77,8 @@ const generateMockThreats = (): Threat[] => [
     indicators: ['Phishing emails', 'Malware signatures', 'C2 communications'],
     status: 'active',
     timestamp: Date.now() - 1200000,
+    latitude: 48.86,
+    longitude: 2.35,
   },
 ];
 
@@ -358,23 +368,27 @@ export function useBackendThreatData(mode: ConnectionMode = 'auto') {
     if (backendConnected) {
       try {
         await dataSourceAPI.update(id, { apiKey });
+        await threatAPI.refresh();
         await fetchDataSourcesFromBackend();
+        await fetchThreatsFromBackend();
       } catch (error) {
         console.error('Failed to update API key:', error);
       }
     }
-  }, [backendConnected, fetchDataSourcesFromBackend]);
+  }, [backendConnected, fetchDataSourcesFromBackend, fetchThreatsFromBackend]);
 
   const updateDataSourceEndpoint = useCallback(async (id: string, endpoint: string) => {
     if (backendConnected) {
       try {
         await dataSourceAPI.update(id, { endpoint });
+        await threatAPI.refresh();
         await fetchDataSourcesFromBackend();
+        await fetchThreatsFromBackend();
       } catch (error) {
         console.error('Failed to update endpoint:', error);
       }
     }
-  }, [backendConnected, fetchDataSourcesFromBackend]);
+  }, [backendConnected, fetchDataSourcesFromBackend, fetchThreatsFromBackend]);
 
   const refreshData = useCallback(async () => {
     if (backendConnected) {

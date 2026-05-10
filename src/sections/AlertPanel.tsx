@@ -15,7 +15,7 @@ export function AlertPanel({ alerts, onAcknowledge }: AlertPanelProps) {
   const acknowledgedAlerts = alerts.filter(a => a.acknowledged);
 
   return (
-    <section className="cyber-card h-full flex flex-col">
+    <section className="cyber-card h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-cyan-500/20">
         <div className="flex items-center gap-3">
@@ -44,7 +44,7 @@ export function AlertPanel({ alerts, onAcknowledge }: AlertPanelProps) {
       </div>
 
       {/* Alert List */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 min-h-0 p-4">
         <div className="space-y-3">
           {activeAlerts.length === 0 && acknowledgedAlerts.length === 0 ? (
             <div className="text-center py-8">
